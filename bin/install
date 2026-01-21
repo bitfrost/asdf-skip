@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+current_script_path=${BASH_SOURCE[0]}
+plugin_dir=$(dirname "$(dirname "$current_script_path")")
+
+# shellcheck source=../lib/utils.bash
+source "${plugin_dir}/lib/utils.bash"
+
+install_version() {
+  local install_type="$1"
+  local version="$2"
+  local install_path="$3"
+  local download_path="$4"
+
+  if [[ "$install_type" != "version" ]]; then
+    fail "asdf-$TOOL_NAME supports release versions only"
+  fi
+
+  local platform
+  platform="$(get_platform)"
+  
+  local zip_file="${download_path}/skip-${platform}.zip"
+  
+  if [[ ! -f "$zip_file" ]]; then
+    fail "Downloaded file not found: $zip_file"
+  fi
+
+  echo "Installing Skip $version..."
+
+  # Create bin directory
+  mkdir -p "${install_path}/bin"
+  
+  # Extract the zip file
+  # Skip zips contain the binary directly or in a simple structure
+  local temp_dir="${download_path}/extract"
+  mkdir -p "$temp_dir"
+  unzip -q "$zip_file" -d "$temp_dir"
+  
+  # Find the skip binary and copy it
+  local skip_binary
+  skip_binary="$(find "$temp_dir" -name "skip" -type f | head -1)"
+  
+  if [[ -z "$skip_binary" ]]; then
+    fail "Could not find 'skip' binary in the downloaded archive"
+  fi
+  
+  cp "$skip_binary" "${install_path}/bin/skip"
+  chmod +x "${install_path}/bin/skip"
+  
+  # Clean up temp directory
+  rm -rf "$temp_dir"
+
+  # Verify installation
+  if [[ ! -x "${install_path}/bin/skip" ]]; then
+    fail "Installation failed: skip binary is not executable"
+  fi
+
+  echo "Skip $version installed successfully!"
+}
+
+install_version "$ASDF_INSTALL_TYPE" "$ASDF_INSTALL_VERSION" "$ASDF_INSTALL_PATH" "$ASDF_DOWNLOAD_PATH"

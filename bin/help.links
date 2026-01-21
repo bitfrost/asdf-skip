@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cat <<EOF
+Website:        https://skip.dev
+Documentation:  https://skip.dev/docs/
+GitHub:         https://github.com/skiptools/skip
+Getting Started: https://skip.dev/docs/gettingstarted/
+EOF

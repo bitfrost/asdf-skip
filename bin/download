@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+current_script_path=${BASH_SOURCE[0]}
+plugin_dir=$(dirname "$(dirname "$current_script_path")")
+
+# shellcheck source=../lib/utils.bash
+source "${plugin_dir}/lib/utils.bash"
+
+install_version() {
+  local install_type="$1"
+  local version="$2"
+  local download_path="$3"
+
+  if [[ "$install_type" != "version" ]]; then
+    fail "asdf-$TOOL_NAME supports release versions only"
+  fi
+
+  local platform
+  platform="$(get_platform)"
+  
+  local url
+  url="$(get_download_url "$version")"
+  
+  local filename="skip-${platform}.zip"
+  local download_file="${download_path}/${filename}"
+
+  echo "Downloading Skip $version for $platform..."
+  
+  mkdir -p "$download_path"
+  download_file "$url" "$download_file"
+  
+  echo "Download complete: $download_file"
+}
+
+install_version "$ASDF_INSTALL_TYPE" "$ASDF_INSTALL_VERSION" "$ASDF_DOWNLOAD_PATH"

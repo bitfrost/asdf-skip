@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cat <<EOF
+Skip enables the creation of dual-platform native apps in Swift that run on
+both iOS and Android. It transpiles Swift/SwiftUI code to Kotlin/Compose,
+allowing you to share business logic and UI across platforms.
+
+This plugin installs the Skip CLI tool which provides commands for creating,
+building, and managing Skip projects.
+EOF

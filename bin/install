@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+current_script_path=${BASH_SOURCE[0]}
+plugin_dir=$(dirname "$(dirname "$current_script_path")")
+
+# shellcheck source=../lib/utils.bash
+source "${plugin_dir}/lib/utils.bash"
+
+install_version() {
+  local install_type="$1"
+  local version="$2"
+  local install_path="$3"
+  local download_path="$4"
+
+  if [[ "$install_type" != "version" ]]; then
+    fail "asdf-$TOOL_NAME supports release versions only"
+  fi
+
+  local platform
+  platform="$(get_platform)"
+  
+  local zip_file="${download_path}/skip-${platform}.zip"
+  
+  if [[ ! -f "$zip_file" ]]; then
+    fail "Downloaded file not found: $zip_file"
+  fi
+
+  echo "Installing Skip $version..."
+
+  # Create bin directory
+  mkdir -p "${install_path}/bin"
+  
+  # Extract the zip file
+  local temp_dir="${download_path}/extract"
+  mkdir -p "$temp_dir"
+  unzip -q "$zip_file" -d "$temp_dir"
+  
+  # Find the skip binary based on platform and architecture
+  local skip_binary
+  
+  if [[ "$platform" == "linux" ]]; then
+    # Linux: artifactbundle with arch-specific binaries
+    local arch
+    arch="$(get_linux_arch)"
+    skip_binary="${temp_dir}/skip.artifactbundle/${arch}-swift-linux-musl/skip"
+    
+    if [[ ! -f "$skip_binary" ]]; then
+      fail "Could not find skip binary for Linux ${arch} at: ${skip_binary}"
+    fi
+  else
+    # macOS: look for macos binary in artifactbundle, or fallback to any skip binary
+    skip_binary="$(find "$temp_dir" -path "*/macos/skip" -type f 2>/dev/null | head -1)"
+    if [[ -z "$skip_binary" ]]; then
+      # Fallback: look for any executable skip binary (excluding scripts and json)
+      skip_binary="$(find "$temp_dir" -name "skip" -type f ! -name "*.json" -perm +111 2>/dev/null | head -1)"
+    fi
+    if [[ -z "$skip_binary" ]]; then
+      # Last resort: any file named skip
+      skip_binary="$(find "$temp_dir" -name "skip" -type f ! -name "*.json" | head -1)"
+    fi
+  fi
+  
+  if [[ -z "$skip_binary" || ! -f "$skip_binary" ]]; then
+    fail "Could not find 'skip' binary in the downloaded archive"
+  fi
+  
+  cp "$skip_binary" "${install_path}/bin/skip"
+  chmod +x "${install_path}/bin/skip"
+  
+  # Clean up temp directory
+  rm -rf "$temp_dir"
+
+  # Verify installation
+  if [[ ! -x "${install_path}/bin/skip" ]]; then
+    fail "Installation failed: skip binary is not executable"
+  fi
+
+  echo "Skip $version installed successfully!"
+}
+
+install_version "$ASDF_INSTALL_TYPE" "$ASDF_INSTALL_VERSION" "$ASDF_INSTALL_PATH" "$ASDF_DOWNLOAD_PATH"

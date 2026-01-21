@@ -33,16 +33,36 @@ install_version() {
   mkdir -p "${install_path}/bin"
   
   # Extract the zip file
-  # Skip zips contain the binary directly or in a simple structure
   local temp_dir="${download_path}/extract"
   mkdir -p "$temp_dir"
   unzip -q "$zip_file" -d "$temp_dir"
   
-  # Find the skip binary and copy it
+  # Find the skip binary based on platform and architecture
   local skip_binary
-  skip_binary="$(find "$temp_dir" -name "skip" -type f | head -1)"
   
-  if [[ -z "$skip_binary" ]]; then
+  if [[ "$platform" == "linux" ]]; then
+    # Linux: artifactbundle with arch-specific binaries
+    local arch
+    arch="$(get_linux_arch)"
+    skip_binary="${temp_dir}/skip.artifactbundle/${arch}-swift-linux-musl/skip"
+    
+    if [[ ! -f "$skip_binary" ]]; then
+      fail "Could not find skip binary for Linux ${arch} at: ${skip_binary}"
+    fi
+  else
+    # macOS: look for macos binary in artifactbundle, or fallback to any skip binary
+    skip_binary="$(find "$temp_dir" -path "*/macos/skip" -type f 2>/dev/null | head -1)"
+    if [[ -z "$skip_binary" ]]; then
+      # Fallback: look for any executable skip binary (excluding scripts and json)
+      skip_binary="$(find "$temp_dir" -name "skip" -type f ! -name "*.json" -perm +111 2>/dev/null | head -1)"
+    fi
+    if [[ -z "$skip_binary" ]]; then
+      # Last resort: any file named skip
+      skip_binary="$(find "$temp_dir" -name "skip" -type f ! -name "*.json" | head -1)"
+    fi
+  fi
+  
+  if [[ -z "$skip_binary" || ! -f "$skip_binary" ]]; then
     fail "Could not find 'skip' binary in the downloaded archive"
   fi
   

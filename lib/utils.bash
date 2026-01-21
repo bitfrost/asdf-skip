@@ -24,7 +24,7 @@ get_platform() {
   esac
 }
 
-# Get architecture (for future use if Skip adds arch-specific builds)
+# Get architecture
 get_arch() {
   local arch
   arch="$(uname -m)"
@@ -33,6 +33,20 @@ get_arch() {
     aarch64 | arm64) echo "arm64" ;;
     *)
       fail "Unsupported architecture: $arch"
+      ;;
+  esac
+}
+
+# Get Linux architecture string for Skip artifactbundle paths
+# Returns: x86_64 or aarch64 (matching Skip's directory naming)
+get_linux_arch() {
+  local arch
+  arch="$(uname -m)"
+  case "$arch" in
+    x86_64 | amd64) echo "x86_64" ;;
+    aarch64 | arm64) echo "aarch64" ;;
+    *)
+      fail "Unsupported Linux architecture: $arch"
       ;;
   esac
 }

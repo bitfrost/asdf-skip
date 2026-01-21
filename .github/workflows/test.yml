@@ -23,5 +23,5 @@ jobs:
       - name: asdf_plugin_test
         uses: asdf-vm/actions/plugin-test@6a442392015fbbdd8b48696d41e0051b2698b2e4 # v2
         with:
-          command: skip --version
+          command: skip version
           version: ${{ matrix.version }}
